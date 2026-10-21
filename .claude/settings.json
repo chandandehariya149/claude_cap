@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try{const i=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));const cmd=(i.tool_input&&i.tool_input.command)||'';const gates=['git push','gh pr create','gh repo create','git reset --hard','git clean -f'];const hit=gates.find(g=>cmd.includes(g));if(hit){console.error('[APPROVAL GATE] Command contains: '+hit+' — confirm human approval before this runs.');process.exit(2);}}catch(e){}\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try{const i=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));const f=(i.tool_input&&i.tool_input.file_path)||'';if(f.endsWith('.md')&&!f.includes('.claude')&&!f.includes('plans')){console.log('[SDLC] Artifact written: '+f.split(/[\\\\/]/).pop());}}catch(e){}\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
