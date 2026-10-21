@@ -46,8 +46,9 @@ After each stage, use this exact approval prompt (substitute stage details):
 ## Stage-by-Stage Instructions
 
 ### Stage 1 — Requirements
-- Verify `user-story.md` exists. If not, stop and ask the human to provide it.
-- Invoke `requirements-analyst`: read `user-story.md`, identify ambiguities, ask clarifying questions, wait for answers, write `requirements.md`.
+- Ask the human: "Do you have a **Jira issue key** (e.g. DOC-123) or **Confluence page URL** to use as the user story input — or should I read from `user-story.md`?"
+- Invoke `requirements-analyst` with the chosen input source (Jira key, Confluence URL, or `user-story.md`).
+- The subagent will fetch from Jira/Confluence via MCP if available, then identify ambiguities, ask clarifying questions, wait for answers, and write `requirements.md`.
 - Gate: APPROVED → `git add requirements.md && git commit -m "Stage 1: Add approved requirements.md"`
 
 ### Stage 2 — Architecture

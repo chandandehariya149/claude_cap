@@ -81,12 +81,44 @@ Do not run destructive commands (`rm -rf`, `git reset --hard`, `git clean -f`) w
 
 ---
 
-## GitHub Setup Prerequisite (Stage 8)
+## MCP Integrations
 
-Before Stage 8, confirm:
-1. `gh auth status` returns authenticated — if not, run `gh auth login`
-2. A remote GitHub repository exists — if not, run `gh repo create claude-cap --public` and `git remote add origin <url>`
-3. `gh` CLI is installed — if not, install from https://cli.github.com
+### Atlassian (Jira + Confluence) — Stage 1 input
+The Atlassian MCP server (`@sooperset/mcp-atlassian`) is configured in `.claude/settings.json`.
+
+**One-time setup — set these environment variables before starting the pipeline:**
+```
+ATLASSIAN_EMAIL=your-email@domain.com
+ATLASSIAN_API_TOKEN=<token from https://id.atlassian.com/manage-profile/security/api-tokens>
+```
+On Windows, set them in System Properties → Environment Variables, or in your shell:
+```
+set ATLASSIAN_EMAIL=your-email@domain.com
+set ATLASSIAN_API_TOKEN=your-token-here
+```
+
+When configured, the `requirements-analyst` subagent will offer to fetch user stories directly from Jira (by issue key, e.g. `DOC-123`) or Confluence (by page URL). `user-story.md` remains available as a fallback at any time.
+
+Jira instance: `https://chandan-pvt.atlassian.net`
+Confluence instance: `https://chandan-pvt.atlassian.net/wiki`
+
+### GitHub — Stage 8 PR creation
+Install the GitHub MCP plugin (one-time, run in terminal):
+```
+claude plugin install github
+```
+Then set your Personal Access Token (create at https://github.com/settings/tokens — needs `repo` scope):
+```
+set GITHUB_PERSONAL_ACCESS_TOKEN=your-token-here
+```
+The `pr-creator` subagent will use the GitHub MCP plugin tools automatically. Falls back to `gh` CLI if the plugin is not available.
+
+**If using gh CLI instead:** `gh auth login` before Stage 8.
+
+A git remote named `origin` must exist before Stage 8:
+```
+git remote add origin https://github.com/<your-username>/<repo-name>.git
+```
 
 ---
 
