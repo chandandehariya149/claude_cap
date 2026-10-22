@@ -1,5 +1,5 @@
 ## Status
-Draft
+Approved
 
 ## Last Updated
 2026-10-22

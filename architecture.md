@@ -1,5 +1,5 @@
 ## Status
-Draft
+Approved
 
 ## Last Updated
 2026-10-22
@@ -39,18 +39,19 @@ graph TD
 
 ### Todo.java
 - **Responsibility:** Plain data model representing a single todo item. Carries the three fields exposed in the REST API (`id`, `text`, `done`). Jackson serializes instances to/from JSON automatically via Spring Boot's default `ObjectMapper`.
-- **Technology:** Java 17 record or plain POJO class; no external library required.
+- **Technology:** Plain mutable POJO class with private fields and public getters/setters. Java records are excluded because their immutability conflicts with the in-place `done` toggle required by FR-04. No external library required.
 - **Interfaces:**
   - Fields: `Long id`, `String text`, `boolean done`
+  - Full-argument constructor used by `TodoService`; getters/setters used by `TodoService.toggle()` and Jackson serialization.
   - Constructed by `TodoService`; read by `TodoController` for serialization.
 
 ### TodoService.java
-- **Responsibility:** Owns the in-memory todo store. Provides the four business operations (list all, add, toggle, delete). Manages unique ID generation with an `AtomicLong`. Uses `Collections.synchronizedList` or `CopyOnWriteArrayList` to guard against concurrent-access issues (NFR constraint from assumption A-2).
-- **Technology:** Plain Spring `@Service` bean; Java stdlib `java.util.concurrent.atomic.AtomicLong`; `java.util.ArrayList` (or `CopyOnWriteArrayList`).
+- **Responsibility:** Owns the in-memory todo store. Provides the four business operations (list all, add, toggle, delete). Manages unique ID generation with an `AtomicLong`. Uses `CopyOnWriteArrayList` to guard against concurrent-access issues without requiring explicit iteration locking (assumption A-2).
+- **Technology:** Plain Spring `@Service` bean; Java stdlib `java.util.concurrent.atomic.AtomicLong`; `java.util.concurrent.CopyOnWriteArrayList` (chosen over `Collections.synchronizedList` because it is iterator-safe without explicit caller locking, appropriate for this read-heavy, low-write workload).
 - **Interfaces:**
   - `List<Todo> getAll()` — returns snapshot of all todos.
-  - `Todo add(String text)` — validates text is not blank (throws `IllegalArgumentException` otherwise), creates and stores a new `Todo`, returns it.
-  - `Todo toggle(Long id)` — flips `done` on the identified item; throws `NoSuchElementException` if not found.
+  - `Todo add(String text)` — validates text is not blank and not longer than 500 characters (throws `IllegalArgumentException` otherwise), creates and stores a new `Todo`, returns it.
+  - `Todo toggle(Long id)` — flips `done` on the identified item using `todo.setDone(!todo.isDone())`; throws `NoSuchElementException` if not found.
   - `void delete(Long id)` — removes the identified item; throws `NoSuchElementException` if not found.
 
 ### TodoController.java
@@ -97,7 +98,7 @@ graph TD
 | Field | Java type | JSON type | Notes |
 |-------|-----------|-----------|-------|
 | `id`   | `Long`    | `number`  | Auto-incremented, 1-based, never reused within a session |
-| `text` | `String`  | `string`  | Non-blank, no max length enforced server-side |
+| `text` | `String`  | `string`  | Non-blank, max 500 characters; validated by `TodoService.add()` — returns HTTP 400 if exceeded |
 | `done` | `boolean` | `boolean` | `false` on creation; toggled by PUT |
 
 ### Request / Response shapes
@@ -145,7 +146,7 @@ graph TD
 | Framework | Spring Boot 3.x (`spring-boot-starter-web`) | Provides embedded Tomcat, Spring MVC, Jackson; single dependency satisfies all server-side needs (FR-01 – FR-07) |
 | Build tool | Maven (`pom.xml`) | Mandated by requirements constraint; `mvn spring-boot:run` startup |
 | JSON serialization | Jackson (bundled with `spring-boot-starter-web`) | No additional dependency; automatic via `@RestController` |
-| In-memory store | `java.util.ArrayList` + `java.util.concurrent.atomic.AtomicLong` | Java stdlib; sufficient for single-user dev use (FR-06) |
+| In-memory store | `java.util.concurrent.CopyOnWriteArrayList` + `java.util.concurrent.atomic.AtomicLong` | Java stdlib; thread-safe without explicit iteration locking; sufficient for single-user dev use (FR-06) |
 | Frontend | Vanilla HTML5 / CSS3 / ES6+ JS | Mandated by requirements constraint; no build pipeline (NFR-06) |
 | HTTP client (browser) | Fetch API | Native browser API; no library required (FR-10) |
 | Test framework | JUnit 5 (bundled via `spring-boot-starter-test`) | Stdlib-adjacent; standard Spring Boot test dependency |
@@ -178,7 +179,8 @@ src/
 │           └── index.html
 └── test/
     └── java/com/example/todo/
-        └── TodoServiceTest.java
+        ├── TodoServiceTest.java
+        └── TodoControllerTest.java
 pom.xml
 ```
 
@@ -193,7 +195,7 @@ pom.xml
 | `DELETE /api/todos/{id}` — unknown id | `NoSuchElementException` from `TodoService.delete` | Controller catches and returns `404 Not Found` |
 | Frontend — 400 response | Server returns error JSON | JS displays message near input; no list re-render needed |
 | Frontend — 404 response | Item no longer exists | JS silently refreshes the full list via `GET /api/todos` |
-| Frontend — network error | Fetch promise rejects | JS catches and displays a generic error banner; list state preserved |
+| Frontend — network error | Fetch promise rejects | JS catches and displays an error banner with text "Network error — please try again" above the task list; banner auto-dismisses after 5 seconds or when the next successful response arrives; list state preserved |
 | Server restart during session | Next request hits empty server | Frontend reflects server state on next successful fetch |
 
 All exception-to-HTTP mappings are handled at the controller layer using `try/catch` blocks on service calls, keeping `TodoService` free of HTTP concerns.
@@ -210,10 +212,13 @@ These decisions must not be changed during implementation without a design revie
 4. **ID generation via `AtomicLong`** — IDs are never reused within a session. The counter resets only on server restart (by design, per FR-06 / assumption A-3).
 5. **No CORS configuration** — the frontend is same-origin; adding `@CrossOrigin` or a CORS filter would require a security re-review (SC-04).
 6. **No authentication layer** — adding any auth mechanism is explicitly out of scope and would require re-approval.
+7. **PUT /api/todos/{id} is intentionally non-idempotent** — the endpoint always toggles (flips) `done`, meaning two successive identical PUT requests return different states. This is a deliberate design choice per FR-04 and assumption A-4. Any future change to accept a desired-state body (e.g. `{"done": true}`) and restore REST idempotency requires a design review.
 
 ---
 
 ## Open Questions
 
-1. **Max text length** — EC-04 says "the app does not crash" for very long text, but no maximum is specified. Implementation may choose a server-side limit (e.g. 10,000 characters) validated in `TodoService.add`; or rely on CSS `overflow-wrap` on the frontend only. Decision should be confirmed before implementation.
-2. **requirements.md Status field** — The file currently reads `Status: Draft` rather than `Approved`. The architecture was produced on explicit instruction from the pipeline orchestrator; if the status discrepancy is intentional (the orchestrator tracks approval separately), no action is needed. Otherwise, `requirements.md` should be updated to `Approved` before Stage 3 begins.
+All open questions were resolved during Stage 3 Design Review (2026-10-22):
+
+1. **Max text length** — Resolved: 500-character maximum enforced server-side in `TodoService.add()` with HTTP 400 response; HTML `maxlength="500"` added to frontend input element.
+2. **requirements.md Status field** — Resolved: `requirements.md` updated to `Approved` status as part of Stage 3.
