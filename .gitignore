@@ -1,3 +1,5 @@
 .claude/settings.json
 .mcp.json
 node_modules/
+target/
+docs/
