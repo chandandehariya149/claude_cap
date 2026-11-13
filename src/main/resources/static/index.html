@@ -21,7 +21,7 @@
       border-radius: 16px;
       box-shadow: 0 4px 24px rgba(0,0,0,0.08);
       width: 100%;
-      max-width: 560px;
+      max-width: 600px;
       padding: 32px;
       height: fit-content;
     }
@@ -39,7 +39,7 @@
       margin-bottom: 24px;
     }
 
-    /* ── Error banner ─────────────────────────────────────────────────────── */
+    /* ── Error banner ──────────────────────────────────────────────────────── */
     #error-banner {
       display: none;
       background: #fed7d7;
@@ -50,15 +50,17 @@
       margin-bottom: 16px;
     }
 
-    /* ── Add form ─────────────────────────────────────────────────────────── */
+    /* ── Add form ──────────────────────────────────────────────────────────── */
     #add-form {
       display: flex;
       gap: 8px;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
     }
 
     #task-input {
       flex: 1;
+      min-width: 160px;
       padding: 10px 14px;
       border: 2px solid #e2e8f0;
       border-radius: 8px;
@@ -70,6 +72,20 @@
 
     #task-input:focus { border-color: #667eea; }
     #task-input::placeholder { color: #a0aec0; }
+
+    #priority-select {
+      padding: 10px 10px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: #1a202c;
+      background: white;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #priority-select:focus { border-color: #667eea; }
 
     #add-form button {
       padding: 10px 20px;
@@ -84,22 +100,75 @@
       white-space: nowrap;
     }
 
-    #add-form button:hover { background: #5a67d8; }
+    #add-form button:hover:not(:disabled) { background: #5a67d8; }
+    #add-form button:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    /* ── Todo list ────────────────────────────────────────────────────────── */
-    #todo-list {
-      list-style: none;
+    /* ── Filter bar ────────────────────────────────────────────────────────── */
+    #filter-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
     }
+
+    .filter-tab {
+      padding: 6px 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      background: white;
+      color: #718096;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+    }
+
+    .filter-tab:hover { border-color: #667eea; color: #667eea; }
+    .filter-tab.active { background: #667eea; color: white; border-color: #667eea; }
+
+    #search-input {
+      flex: 1;
+      min-width: 120px;
+      padding: 6px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #search-input:focus { border-color: #667eea; }
+    #search-input::placeholder { color: #a0aec0; }
+
+    /* ── Priority badges ───────────────────────────────────────────────────── */
+    .priority-badge {
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .badge-high   { background: #fed7d7; color: #c53030; }
+    .badge-medium { background: #fefcbf; color: #b7791f; }
+    .badge-low    { background: #c6f6d5; color: #276749; }
+
+    /* ── Todo list ─────────────────────────────────────────────────────────── */
+    #todo-list { list-style: none; }
 
     #todo-list li {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 12px 0;
+      padding: 12px 8px;
       border-bottom: 1px solid #f7fafc;
+      border-radius: 6px;
+      transition: background 0.15s;
     }
 
     #todo-list li:last-child { border-bottom: none; }
+    #todo-list li:hover { background: #f7fafc; }
+    #todo-list li.done { opacity: 0.6; }
 
     #todo-list input[type="checkbox"] {
       width: 18px;
@@ -116,10 +185,7 @@
       word-break: break-word;
     }
 
-    .done .todo-text {
-      text-decoration: line-through;
-      opacity: 0.45;
-    }
+    .done .todo-text { text-decoration: line-through; }
 
     .delete-btn {
       padding: 4px 10px;
@@ -135,7 +201,31 @@
 
     .delete-btn:hover { background: #fc8181; color: white; }
 
-    #empty-msg {
+    /* ── Animations ────────────────────────────────────────────────────────── */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .todo-row-new { animation: fadeIn 0.35s ease forwards; }
+
+    /* ── Empty / no-match states ───────────────────────────────────────────── */
+    #empty-state {
+      text-align: center;
+      color: #a0aec0;
+      font-size: 0.9rem;
+      padding: 32px 0;
+      display: none;
+    }
+
+    #empty-state::before {
+      content: "📋";
+      display: block;
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    #no-match-msg {
       text-align: center;
       color: #a0aec0;
       font-size: 0.9rem;
@@ -143,12 +233,14 @@
       display: none;
     }
 
-    /* ── Mobile ───────────────────────────────────────────────────────────── */
+    /* ── Mobile ────────────────────────────────────────────────────────────── */
     @media (max-width: 480px) {
       .card { padding: 24px 16px; }
       h1 { font-size: 1.4rem; }
       #add-form { flex-direction: column; }
-      #add-form button { width: 100%; }
+      #add-form button, #priority-select { width: 100%; }
+      #filter-bar { flex-direction: column; align-items: stretch; }
+      #search-input { width: 100%; }
     }
   </style>
 </head>
@@ -161,15 +253,33 @@
 
     <form id="add-form">
       <input type="text" id="task-input" placeholder="What needs to be done?" maxlength="500" autocomplete="off">
+      <select id="priority-select">
+        <option value="HIGH">High</option>
+        <option value="MEDIUM" selected>Medium</option>
+        <option value="LOW">Low</option>
+      </select>
       <button type="submit">Add</button>
     </form>
 
+    <div id="filter-bar">
+      <button class="filter-tab active" data-filter="all">All</button>
+      <button class="filter-tab" data-filter="active">Active</button>
+      <button class="filter-tab" data-filter="completed">Completed</button>
+      <input type="text" id="search-input" placeholder="Search tasks...">
+    </div>
+
     <ul id="todo-list"></ul>
-    <p id="empty-msg">No tasks yet — add one above!</p>
+    <div id="empty-state">No tasks yet — add one above!</div>
+    <p id="no-match-msg">No matching tasks</p>
   </div>
 
   <script>
     const API = '/api/todos';
+    let allTodos = [];
+    let activeFilter = 'all';
+
+    const BADGE_CLASS = { HIGH: 'badge-high', MEDIUM: 'badge-medium', LOW: 'badge-low' };
+    const BADGE_LABEL = { HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' };
 
     function showError(msg) {
       const banner = document.getElementById('error-banner');
@@ -183,18 +293,44 @@
       document.getElementById('counter').textContent = `${done} of ${todos.length} done`;
     }
 
-    function renderTodos(todos) {
-      const list = document.getElementById('todo-list');
-      const emptyMsg = document.getElementById('empty-msg');
-      list.innerHTML = '';
+    function filterAndRender() {
+      const searchText = document.getElementById('search-input').value.toLowerCase();
 
-      if (todos.length === 0) {
-        emptyMsg.style.display = 'block';
-        updateCounter(todos);
-        return;
+      let visible = allTodos.filter(t => {
+        if (activeFilter === 'active') return !t.done;
+        if (activeFilter === 'completed') return t.done;
+        return true;
+      });
+
+      if (searchText) {
+        visible = visible.filter(t => t.text.toLowerCase().includes(searchText));
       }
 
-      emptyMsg.style.display = 'none';
+      const emptyState = document.getElementById('empty-state');
+      const noMatch   = document.getElementById('no-match-msg');
+      const list      = document.getElementById('todo-list');
+
+      if (allTodos.length === 0) {
+        emptyState.style.display = 'block';
+        noMatch.style.display    = 'none';
+        list.style.display       = 'none';
+      } else if (visible.length === 0) {
+        noMatch.style.display    = 'block';
+        emptyState.style.display = 'none';
+        list.style.display       = 'none';
+      } else {
+        list.style.display       = '';
+        emptyState.style.display = 'none';
+        noMatch.style.display    = 'none';
+      }
+
+      renderTodos(visible);
+      updateCounter(visible);
+    }
+
+    function renderTodos(todos) {
+      const list = document.getElementById('todo-list');
+      list.innerHTML = '';
 
       todos.forEach(todo => {
         const li = document.createElement('li');
@@ -209,6 +345,10 @@
         span.className = 'todo-text';
         span.textContent = todo.text;
 
+        const badge = document.createElement('span');
+        badge.className = `priority-badge ${BADGE_CLASS[todo.priority] || 'badge-medium'}`;
+        badge.textContent = BADGE_LABEL[todo.priority] || 'Medium';
+
         const delBtn = document.createElement('button');
         delBtn.className = 'delete-btn';
         delBtn.textContent = 'Delete';
@@ -216,38 +356,55 @@
 
         li.appendChild(checkbox);
         li.appendChild(span);
+        li.appendChild(badge);
         li.appendChild(delBtn);
         list.appendChild(li);
       });
-
-      updateCounter(todos);
     }
 
     async function loadTodos() {
       try {
         const res = await fetch(API);
         const todos = await res.json();
-        renderTodos(todos);
+        allTodos = todos;
+        filterAndRender();
       } catch {
         showError('Network error — please try again.');
       }
     }
 
-    async function addTodo(text) {
+    async function addTodo(text, priority) {
+      const btn = document.querySelector('#add-form button');
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '...';
       try {
         const res = await fetch(API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text })
+          body: JSON.stringify({ text, priority })
         });
         if (res.status === 400) {
           const data = await res.json();
           showError(data.error || 'Invalid input.');
           return;
         }
+        activeFilter = 'all';
+        document.querySelectorAll('.filter-tab').forEach(b =>
+          b.classList.toggle('active', b.dataset.filter === 'all'));
+        document.getElementById('search-input').value = '';
         await loadTodos();
+        const items = document.querySelectorAll('#todo-list li');
+        if (items.length > 0) {
+          const newest = items[items.length - 1];
+          newest.classList.add('todo-row-new');
+          newest.addEventListener('animationend', () => newest.classList.remove('todo-row-new'), { once: true });
+        }
       } catch {
         showError('Network error — please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
       }
     }
 
@@ -271,13 +428,24 @@
       }
     }
 
+    document.getElementById('filter-bar').addEventListener('click', e => {
+      const tab = e.target.closest('.filter-tab');
+      if (!tab) return;
+      activeFilter = tab.dataset.filter;
+      document.querySelectorAll('.filter-tab').forEach(b => b.classList.toggle('active', b === tab));
+      filterAndRender();
+    });
+
+    document.getElementById('search-input').addEventListener('input', filterAndRender);
+
     document.getElementById('add-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const input = document.getElementById('task-input');
       const text = input.value.trim();
       if (!text) { showError('Task cannot be empty.'); return; }
+      const priority = document.getElementById('priority-select').value;
       input.value = '';
-      await addTodo(text);
+      await addTodo(text, priority);
     });
 
     document.addEventListener('DOMContentLoaded', loadTodos);

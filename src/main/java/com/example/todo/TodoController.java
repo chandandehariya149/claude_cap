@@ -26,7 +26,7 @@ public class TodoController {
     @PostMapping
     public ResponseEntity<?> create(@RequestBody Map<String, String> body) {
         try {
-            Todo created = todoService.add(body.get("text"));
+            Todo created = todoService.add(body.get("text"), body.get("priority"));
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

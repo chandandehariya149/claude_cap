@@ -3,6 +3,7 @@ package com.example.todo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -80,5 +81,66 @@ class TodoServiceTest {
         service.add("Task 2");
         service.add("Task 3");
         assertEquals(3, service.getAll().size());
+    }
+
+    // ── 9 new priority tests ──────────────────────────────────────────────────
+
+    @Test
+    void add_withHighPriority_returnsTodoWithHighPriority() {
+        Todo todo = service.add("task", "HIGH");
+        assertEquals("HIGH", todo.getPriority());
+    }
+
+    @Test
+    void add_withLowercasePriority_normalizesToUppercase() {
+        Todo todo = service.add("task", "low");
+        assertEquals("LOW", todo.getPriority());
+    }
+
+    @Test
+    void add_withMixedCasePriority_normalizesToUppercase() {
+        Todo todo = service.add("task", "Medium");
+        assertEquals("MEDIUM", todo.getPriority());
+    }
+
+    @Test
+    void add_withNullPriority_defaultsToMedium() {
+        Todo todo = service.add("task", null);
+        assertEquals("MEDIUM", todo.getPriority());
+    }
+
+    @Test
+    void add_withBlankPriority_defaultsToMedium() {
+        Todo todo = service.add("task", "  ");
+        assertEquals("MEDIUM", todo.getPriority());
+    }
+
+    @Test
+    void add_withInvalidPriority_throwsIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> service.add("task", "URGENT"));
+    }
+
+    @Test
+    void add_withWhitespacePaddedPriority_normalizesCorrectly() {
+        Todo todo = service.add("task", "  HIGH  ");
+        assertEquals("HIGH", todo.getPriority());
+    }
+
+    @Test
+    void add_withLowPriority_returnsTodoWithLowPriority() {
+        Todo todo = service.add("task", "LOW");
+        assertEquals("LOW", todo.getPriority());
+    }
+
+    @Test
+    void getAll_returnsTasksWithPriorityField() {
+        service.add("Task A", "HIGH");
+        service.add("Task B", "LOW");
+        List<Todo> all = service.getAll();
+        assertEquals(2, all.size());
+        assertNotNull(all.get(0).getPriority());
+        assertNotNull(all.get(1).getPriority());
+        assertEquals("HIGH", all.get(0).getPriority());
+        assertEquals("LOW", all.get(1).getPriority());
     }
 }

@@ -5,6 +5,7 @@ public class Todo {
     private Long id;
     private String text;
     private boolean done;
+    private String priority;
 
     public Todo() {}
 
@@ -12,6 +13,13 @@ public class Todo {
         this.id = id;
         this.text = text;
         this.done = done;
+    }
+
+    public Todo(Long id, String text, boolean done, String priority) {
+        this.id = id;
+        this.text = text;
+        this.done = done;
+        this.priority = priority;
     }
 
     public Long getId() { return id; }
@@ -22,4 +30,7 @@ public class Todo {
 
     public boolean isDone() { return done; }
     public void setDone(boolean done) { this.done = done; }
+
+    public String getPriority() { return priority; }
+    public void setPriority(String priority) { this.priority = priority; }
 }

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -14,18 +15,30 @@ public class TodoService {
     private final CopyOnWriteArrayList<Todo> todos = new CopyOnWriteArrayList<>();
     private final AtomicLong counter = new AtomicLong();
 
+    private static final Set<String> VALID_PRIORITIES = Set.of("HIGH", "MEDIUM", "LOW");
+
     public List<Todo> getAll() {
         return new ArrayList<>(todos);
     }
 
     public Todo add(String text) {
+        return add(text, null);
+    }
+
+    public Todo add(String text, String priority) {
         if (text == null || text.isBlank()) {
             throw new IllegalArgumentException("Task text cannot be empty.");
         }
         if (text.length() > 500) {
             throw new IllegalArgumentException("Task text must be 500 characters or fewer.");
         }
-        Todo todo = new Todo(counter.incrementAndGet(), text.trim(), false);
+        String normalizedPriority = (priority == null || priority.isBlank())
+                ? "MEDIUM"
+                : priority.trim().toUpperCase();
+        if (!VALID_PRIORITIES.contains(normalizedPriority)) {
+            throw new IllegalArgumentException("Invalid priority: must be HIGH, MEDIUM, or LOW");
+        }
+        Todo todo = new Todo(counter.incrementAndGet(), text.trim(), false, normalizedPriority);
         todos.add(todo);
         return todo;
     }
