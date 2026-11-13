@@ -374,7 +374,7 @@
     }
 
     async function addTodo(text, priority) {
-      const btn = document.querySelector('#add-form button');
+      const btn = document.querySelector('#add-form button[type="submit"]');
       const originalText = btn.textContent;
       btn.disabled = true;
       btn.textContent = '...';
@@ -387,6 +387,10 @@
         if (res.status === 400) {
           const data = await res.json();
           showError(data.error || 'Invalid input.');
+          return;
+        }
+        if (!res.ok) {
+          showError('Server error — please try again.');
           return;
         }
         activeFilter = 'all';
